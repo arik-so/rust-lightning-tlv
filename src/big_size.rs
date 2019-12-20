@@ -1,4 +1,5 @@
 use crate::big_size::EncodingDetails::{Length8, Length64, Length16, Length32};
+use std::convert::TryInto;
 
 const MIN_16_BIT_VALUE: u64 = 0xfd;
 const MIN_32_BIT_VALUE: u64 = 0x10000;
@@ -30,10 +31,19 @@ impl EncodingDetails {
 			&Length64 => Some(0xff)
 		};
 	}
+
+	fn detect(prefix: u8) -> EncodingDetails {
+		match prefix {
+			0xfd => Length16,
+			0xfe => Length32,
+			0xff => Length64,
+			_ => Length8
+		}
+	}
 }
 
 pub struct BigSize {
-	pub value: u64
+	value: u64
 }
 
 impl BigSize {
@@ -43,6 +53,10 @@ impl BigSize {
 
 	pub fn length(&self) -> u8 {
 		self.encoding_details().length()
+	}
+
+	pub fn value(&self) -> u64 {
+		self.value
 	}
 
 	pub fn serialize(&self) -> Vec<u8> {
@@ -63,7 +77,7 @@ impl BigSize {
 		let mut serialization = vec![prefix];
 		serialization.extend_from_slice(relevant_bytes);
 
-		serialization
+		serialization.to_owned()
 	}
 
 	fn encoding_details(&self) -> EncodingDetails {
@@ -81,7 +95,28 @@ impl BigSize {
 
 	pub fn parse(undelimited_buffer: &[u8]) -> BigSize {
 		let first_byte = undelimited_buffer[0];
-		println!("first_byte: {}", first_byte);
-		BigSize::new(23)
+		let encoding_details = EncodingDetails::detect(first_byte);
+
+		let length = encoding_details.length() as usize;
+		let mut offset: usize = 0;
+		if encoding_details.prefix().is_some() {
+			offset = 1;
+		}
+
+		let complement_length = 8 - length + offset;
+
+		let relevant_bytes = undelimited_buffer[offset..length].to_vec();
+
+		// create 8-byte-vector to parse values up to u64
+		let mut big_endian_bytes: Vec<u8> = vec![0; complement_length];
+		big_endian_bytes.extend_from_slice(&relevant_bytes);
+
+		// create compile-time-known-length slice
+		let mut big_endian_slice: [u8; 8] = Default::default();
+		big_endian_slice.copy_from_slice(&big_endian_bytes[..]);
+
+		// parse u64
+		let value: u64 = u64::from_be_bytes(big_endian_slice);
+		BigSize::new(value)
 	}
 }
