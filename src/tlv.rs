@@ -6,8 +6,8 @@ pub struct TLV {
 }
 
 impl TLV {
-	pub fn new(type_id: u64, value: Vec<u8>) -> Self {
-		TLV { type_id, value }
+	pub fn new(type_id: u64, value: &[u8]) -> Self {
+		TLV { type_id, value: value.to_owned() }
 	}
 
 	pub fn tlv_length(&self) -> usize {
@@ -34,6 +34,18 @@ impl TLV {
 
 		serialization.extend_from_slice(self.value.as_slice());
 		serialization
+	}
+
+	pub fn parse(undelimited_buffer: &[u8]) -> TLV {
+		let type_id = BigSize::parse(undelimited_buffer);
+
+		let length_buffer = undelimited_buffer[type_id.length()..];
+		let length = BigSize::parse(length_buffer);
+
+		let data_buffer = length_buffer[length.length()..];
+		let data = data_buffer[..length.value()];
+
+		TLV::new(type_id.value(), data)
 	}
 }
 
