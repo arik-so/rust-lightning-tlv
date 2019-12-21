@@ -38,15 +38,20 @@ impl TLV {
 
 	pub fn parse(undelimited_buffer: &[u8]) -> TLV {
 		let type_id = BigSize::parse(undelimited_buffer);
+		let type_length = type_id.length() as usize;
 
-		let length_buffer = undelimited_buffer[type_id.length()..];
+		let length_buffer = &undelimited_buffer[type_length..];
 		let length = BigSize::parse(length_buffer);
+		let size_length = length.length() as usize;
 
-		let data_buffer = length_buffer[length.length()..];
-		let data = data_buffer[..length.value()];
+		let data_buffer = &length_buffer[size_length..];
+		let data = &data_buffer[..length.value() as usize];
 
-		TLV::new(type_id.value(), data)
+		println!("undelimited: {:?}", undelimited_buffer);
+		println!("length_buffer: {:?}", length_buffer);
+		println!("data_buffer: {:?}", data_buffer);
+		println!("data: {:?}", data);
+
+		TLV::new(type_id.value(), &data)
 	}
 }
-
-
