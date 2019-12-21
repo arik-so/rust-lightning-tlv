@@ -31,5 +31,7 @@ mod tests {
 		let serialization = tlv.serialize();
 		let restored_tlv = TLV::parse(serialization.as_slice());
 		assert_eq!(restored_tlv.type_id(), type_id);
+		assert_eq!(restored_tlv.tlv_length(), serialization.len());
+		assert_eq!(restored_tlv.data().len(), data.len());
 	}
 }

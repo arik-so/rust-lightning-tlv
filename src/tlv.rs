@@ -25,6 +25,10 @@ impl TLV {
 		self.type_id
 	}
 
+	pub fn data(&self) -> &[u8] {
+		self.value.as_slice()
+	}
+
 	pub fn serialize(&self) -> Vec<u8> {
 		let mut serialization = BigSize::new(self.type_id).serialize();
 
@@ -47,10 +51,10 @@ impl TLV {
 		let data_buffer = &length_buffer[size_length..];
 		let data = &data_buffer[..length.value() as usize];
 
-		println!("undelimited: {:?}", undelimited_buffer);
-		println!("length_buffer: {:?}", length_buffer);
-		println!("data_buffer: {:?}", data_buffer);
-		println!("data: {:?}", data);
+//		println!("undelimited: {:?}", undelimited_buffer);
+//		println!("length_buffer: {:?}", length_buffer);
+//		println!("data_buffer: {:?}", data_buffer);
+//		println!("data: {:?}", data);
 
 		TLV::new(type_id.value(), &data)
 	}
